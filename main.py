@@ -2,7 +2,7 @@ import os
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Header, FastAPI, HTTPException
 from typing import Optional
 
 load_dotenv()
@@ -14,7 +14,7 @@ app = FastAPI(
 
 PINTEREST_API = "https://api.pinterest.com/v5"
 TOKEN = os.getenv("PINTEREST_ACCESS_TOKEN")
-
+APP_API_KEY = os.getenv("APP_API_KEY")
 
 def pinterest_get(endpoint, params=None):
     headers = {
@@ -37,9 +37,16 @@ def pinterest_get(endpoint, params=None):
 
     return response.json()
 
+def verificar_api_key(x_api_key: str = Header(...)):
+    if x_api_key != APP_API_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="API key inválida"
+        )
 
 @app.get("/boards")
-def listar_pastas():
+def listar_pastas(x_api_key: str = Header(...)):
+    verificar_api_key(x_api_key)
     return pinterest_get("/boards")
 
 
@@ -47,8 +54,10 @@ def listar_pastas():
 def listar_pins(
     board_id: str,
     bookmark: Optional[str] = None,
-    page_size: int = 25
+    page_size: int = 25,
+    x_api_key: str = Header(...)
 ):
+    verificar_api_key(x_api_key)
     params = {
         "page_size": page_size
     }
@@ -63,5 +72,6 @@ def listar_pins(
 
 
 @app.get("/pins/{pin_id}")
-def buscar_pin(pin_id: str):
+def buscar_pin(pin_id: str, x_api_key: str = Header(...)):
+    verificar_api_key(x_api_key)
     return pinterest_get(f"/pins/{pin_id}")
