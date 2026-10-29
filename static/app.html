@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visual Reference Assistant</title>
+  <style>
+    :root {
+      --fundo: #faf8f5; --painel: #ffffff; --texto: #1f1c19; --suave: #6b645c; --borda: #e6e0d8;
+      --destaque: #c2410c; --destaque-suave: #fdebdc; --destaque-texto: #ffffff; --bolha: #f3eee7;
+      --ok: #15803d; --erro: #b91c1c; --sombra: 0 8px 30px rgba(0, 0, 0, .08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fundo: #171513; --painel: #201d1a; --texto: #f2ede6; --suave: #a39a8f; --borda: #37322c;
+        --destaque: #fb923c; --destaque-suave: #3a2416; --destaque-texto: #1a1208; --bolha: #2a2622;
+        --ok: #4ade80; --erro: #f87171; --sombra: 0 8px 30px rgba(0, 0, 0, .4);
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--fundo); color: var(--texto); font: 15px/1.5 system-ui, sans-serif;
+      height: 100vh; display: flex; flex-direction: column; }
+    button, input { font: inherit; }
+    button { cursor: pointer; border-radius: 10px; border: 0; padding: 10px 16px; background: var(--destaque);
+      color: var(--destaque-texto); font-weight: 600; }
+    button.leve { background: transparent; color: var(--suave); padding: 6px 10px; font-weight: 500; }
+    button.leve:hover { color: var(--texto); }
+    button:disabled { opacity: .55; cursor: default; }
+    input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--borda);
+      background: var(--fundo); color: var(--texto); }
+    input:focus, button:focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 24px; border-bottom: 1px solid var(--borda); background: var(--painel); }
+    header h1 { font-size: 17px; margin: 0; }
+    header p { margin: 0; color: var(--suave); font-size: 13px; }
+    .status { display: flex; align-items: center; gap: 8px; color: var(--suave); font-size: 13px; }
+    .status .ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+
+    /* Tela de conexão */
+    .conectar { max-width: 440px; margin: 12vh auto 0; padding: 0 16px; }
+    .conectar .cartao { background: var(--painel); border: 1px solid var(--borda); border-radius: 16px;
+      padding: 28px; box-shadow: var(--sombra); }
+    .conectar h2 { margin: 0 0 6px; font-size: 22px; }
+    .conectar p { color: var(--suave); margin: 0 0 18px; }
+    .conectar code { background: var(--bolha); padding: 1px 6px; border-radius: 6px; font-size: 13px; }
+    .conectar form { display: grid; gap: 12px; }
+    .mensagem-erro { color: var(--erro); font-size: 14px; min-height: 20px; margin: 0; }
+
+    /* Tela principal */
+    .principal { display: grid; grid-template-columns: 300px 1fr; flex: 1; min-height: 0; }
+    aside { border-right: 1px solid var(--borda); overflow-y: auto; padding: 20px; background: var(--painel); }
+    aside h2 { font-size: 15px; margin: 0 0 4px; }
+    aside > p { color: var(--suave); font-size: 13px; margin: 0 0 16px; }
+    .pasta { display: grid; grid-template-columns: 52px 1fr; gap: 12px; padding: 12px 0;
+      border-top: 1px solid var(--borda); }
+    .pasta .capa { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: var(--bolha); }
+    .pasta strong { display: block; font-size: 14px; line-height: 1.3; }
+    .pasta small { color: var(--suave); font-size: 12px; }
+    .barra { height: 4px; border-radius: 4px; background: var(--bolha); margin: 6px 0 8px; overflow: hidden; }
+    .barra span { display: block; height: 100%; background: var(--destaque); }
+    .pasta button { padding: 5px 10px; font-size: 13px; background: var(--destaque-suave); color: var(--destaque); }
+    .pasta .feito { color: var(--ok); font-size: 13px; font-weight: 600; }
+
+    .chat { display: flex; flex-direction: column; min-height: 0; }
+    #mensagens { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .vazio { margin: auto; text-align: center; max-width: 520px; }
+    .vazio h2 { font-size: 22px; margin: 0 0 6px; }
+    .vazio p { color: var(--suave); margin: 0 0 18px; }
+    .sugestoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .sugestoes button { background: var(--painel); color: var(--texto); border: 1px solid var(--borda);
+      font-weight: 500; font-size: 14px; padding: 8px 14px; border-radius: 999px; }
+    .sugestoes button:hover { border-color: var(--destaque); }
+    .aviso { background: var(--destaque-suave); color: var(--texto); border-radius: 12px; padding: 12px 16px;
+      font-size: 14px; margin-bottom: 18px; }
+
+    .msg { max-width: min(680px, 90%); white-space: pre-wrap; }
+    .msg.eu { align-self: flex-end; background: var(--destaque); color: var(--destaque-texto);
+      padding: 10px 16px; border-radius: 16px 16px 4px 16px; }
+    .msg.ia { align-self: flex-start; }
+    .msg.ia .texto { background: var(--painel); border: 1px solid var(--borda); padding: 12px 16px;
+      border-radius: 16px 16px 16px 4px; }
+    .msg.ia.erro .texto { border-color: var(--erro); color: var(--erro); }
+    .digitando .texto { color: var(--suave); font-style: italic; }
+
+    .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+    .card { background: var(--painel); color: inherit; padding: 0; border: 1px solid var(--borda); border-radius: 12px;
+      overflow: hidden; text-align: left; font-weight: 400; }
+    .card:hover { border-color: var(--destaque); }
+    .card img { width: 100%; aspect-ratio: 4/5; object-fit: cover; display: block; background: var(--bolha); }
+    .card .info { padding: 8px 10px; font-size: 12px; color: var(--suave); }
+    .paleta { display: flex; gap: 4px; margin-bottom: 4px; }
+    .paleta span { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--borda); }
+
+    form.enviar { display: flex; gap: 8px; padding: 16px 24px 20px; border-top: 1px solid var(--borda); }
+
+    dialog { border: 0; border-radius: 16px; padding: 0; max-width: 760px; width: calc(100% - 32px);
+      background: var(--painel); color: var(--texto); box-shadow: var(--sombra); }
+    dialog::backdrop { background: rgba(0, 0, 0, .5); }
+    .detalhe { display: grid; grid-template-columns: 1fr 1fr; }
+    .detalhe img { width: 100%; height: 100%; max-height: 80vh; object-fit: cover; }
+    .detalhe .corpo { padding: 22px; overflow-y: auto; max-height: 80vh; }
+    .detalhe dl { margin: 12px 0; }
+    .detalhe dt { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--suave); margin-top: 10px; }
+    .detalhe dd { margin: 2px 0 0; }
+    .detalhe .paleta span { width: 28px; height: 28px; border-radius: 8px; }
+    .detalhe a { color: var(--destaque); font-weight: 600; }
+
+    @media (max-width: 760px) {
+      header { padding: 12px 16px; }
+      body { height: auto; }
+      .principal { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--borda); padding: 16px; }
+      /* No celular as pastas viram uma faixa com rolagem lateral para o chat ficar visível */
+      #pastas { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
+      .pasta { flex: 0 0 240px; border: 1px solid var(--borda); border-radius: 12px; padding: 10px;
+        scroll-snap-align: start; }
+      #mensagens { padding: 16px; min-height: 50vh; }
+      form.enviar { padding: 12px 16px 16px; }
+      dialog { max-height: 90vh; overflow-y: auto; }
+      .detalhe { grid-template-columns: 1fr; }
+      .detalhe img { max-height: 40vh; }
+      .detalhe .corpo { max-height: none; overflow: visible; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Visual Reference Assistant</h1>
+      <p>Encontre inspiração nas suas pastas do Pinterest</p>
+    </div>
+    <div class="status" id="status" hidden>
+      <span class="ponto"></span><span id="status-texto"></span>
+      <button class="leve" id="sair">Trocar chave</button>
+    </div>
+  </header>
+
+  <!-- 1. Conectar -->
+  <section class="conectar" id="tela-conectar" hidden>
+    <div class="cartao">
+      <h2>Conectar</h2>
+      <p>Cole o valor de <code>APP_API_KEY</code> do seu arquivo <code>.env</code>
+        (só o que vem depois do <code>=</code>).</p>
+      <form id="form-conectar">
+        <input id="chave" type="password" placeholder="Sua APP_API_KEY" autocomplete="off" aria-label="APP_API_KEY">
+        <button>Entrar</button>
+        <p class="mensagem-erro" id="erro-conectar"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- 2. Pastas + conversa -->
+  <div class="principal" id="tela-principal" hidden>
+    <aside>
+      <h2>Suas pastas</h2>
+      <p>A IA só encontra imagens que já analisou. Escolha uma pasta e clique em <strong>Analisar</strong>.</p>
+      <div id="pastas"><small>Carregando pastas...</small></div>
+    </aside>
+
+    <section class="chat">
+      <div id="mensagens">
+        <div class="vazio" id="vazio">
+          <div class="aviso" id="aviso-vazio" hidden>
+            Você ainda não analisou nenhuma imagem. Comece por uma pasta ao lado; depois é só perguntar aqui.
+          </div>
+          <h2>O que você está procurando?</h2>
+          <p>Descreva com suas palavras: ambiente, cores, luz, sensação. Exemplos:</p>
+          <div class="sugestoes" id="sugestoes"></div>
+        </div>
+      </div>
+      <form class="enviar" id="form-chat">
+        <input id="entrada" placeholder="Ex.: lavabo com madeira escura e luz quente" autocomplete="off" aria-label="Mensagem">
+        <button id="botao-enviar">Enviar</button>
+      </form>
+    </section>
+  </div>
+
+  <dialog id="detalhe"></dialog>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const SUGESTOES = [
+      "Lavabo com madeira escura",
+      "Ambientes com luz quente e aconchegante",
+      "Cozinhas com ilha central",
+      "Paletas em tons de verde",
+      "Quais pastas eu tenho?"
+    ];
+    const LOTE = 10;
+
+    let chave = "";
+    let conversaId = null;
+    let analisadas = { total: 0, por_pasta: {} };
+
+    // ---------- utilidades ----------
+    function el(tag, props = {}, ...filhos) {
+      const e = document.createElement(tag);
+      Object.assign(e, props);
+      e.append(...filhos.filter(Boolean));
+      return e;
+    }
+
+    function mensagemAmigavel(texto) {
+      if (/quota|RESOURCE_EXHAUSTED|429/i.test(texto)) {
+        return "A cota gratuita do Gemini acabou por hoje. Tente de novo amanhã.";
+      }
+      if (/high demand|503|UNAVAILABLE/i.test(texto)) {
+        return "O Gemini está congestionado agora. Espere um minuto e tente de novo.";
+      }
+      if (/Failed to fetch|NetworkError/i.test(texto)) {
+        return "Não consegui falar com o servidor. Ele está rodando (uvicorn)?";
+      }
+      return texto;
+    }
+
+    async function api(caminho, opcoes = {}) {
+      let resposta;
+      try {
+        resposta = await fetch(caminho, {
+          ...opcoes,
+          headers: { "Content-Type": "application/json", "x-api-key": chave }
+        });
+      } catch (erro) {
+        throw new Error(mensagemAmigavel(erro.message));
+      }
+      const corpo = await resposta.json().catch(() => ({}));
+      if (resposta.status === 401 || resposta.status === 422) {
+        throw Object.assign(new Error("Chave inválida. Confira o valor de APP_API_KEY no .env."), { auth: true });
+      }
+      if (!resposta.ok) {
+        const detalhe = typeof corpo.detail === "string" ? corpo.detail : JSON.stringify(corpo.detail || corpo);
+        throw new Error(mensagemAmigavel(detalhe || `Erro ${resposta.status}`));
+      }
+      return corpo;
+    }
+
+    // ---------- conexão ----------
+    async function conectar(valor) {
+      chave = valor.trim();
+      if (!chave) throw new Error("Cole a chave para continuar.");
+      analisadas = await api("/referencias/total");
+      try { localStorage.setItem("vra-chave", chave); } catch (e) {}
+      mostrarPrincipal();
+    }
+
+    function mostrarConectar(erro = "") {
+      $("tela-principal").hidden = true;
+      $("status").hidden = true;
+      $("tela-conectar").hidden = false;
+      $("erro-conectar").textContent = erro;
+      $("chave").focus();
+    }
+
+    function mostrarPrincipal() {
+      $("tela-conectar").hidden = true;
+      $("tela-principal").hidden = false;
+      $("status").hidden = false;
+      atualizarStatus();
+      carregarPastas();
+      $("entrada").focus();
+    }
+
+    function atualizarStatus() {
+      const n = analisadas.total;
+      $("status-texto").textContent = n === 1 ? "1 imagem analisada" : `${n} imagens analisadas`;
+      $("aviso-vazio").hidden = n > 0;
+    }
+
+    $("form-conectar").onsubmit = async (evento) => {
+      evento.preventDefault();
+      const botao = evento.submitter;
+      botao.disabled = true;
+      $("erro-conectar").textContent = "";
+      try { await conectar($("chave").value); }
+      catch (erro) { $("erro-conectar").textContent = erro.message; }
+      botao.disabled = false;
+    };
+
+    $("sair").onclick = () => {
+      try { localStorage.removeItem("vra-chave"); } catch (e) {}
+      $("chave").value = "";
+      mostrarConectar();
+    };
+
+    // ---------- pastas ----------
+    async function carregarPastas() {
+      const lista = $("pastas");
+      try {
+        const { items = [] } = await api("/boards");
+        lista.replaceChildren(...items.map(cartaoPasta));
+        if (!items.length) lista.replaceChildren(el("small", { textContent: "Nenhuma pasta encontrada no Pinterest." }));
+      } catch (erro) {
+        lista.replaceChildren(el("small", { textContent: erro.message }));
+      }
+    }
+
+    function cartaoPasta(pasta) {
+      const total = pasta.pin_count || 0;
+      const feitas = Math.min(analisadas.por_pasta[pasta.id] || 0, total || Infinity);
+      const capaUrl = pasta.media?.image_cover_url;
+      const capa = capaUrl ? el("img", { className: "capa", src: capaUrl, alt: "", loading: "lazy" }) : el("div", { className: "capa" });
+
+      const barra = el("div", { className: "barra" }, el("span"));
+      barra.firstChild.style.width = total ? `${Math.round((feitas / total) * 100)}%` : "0";
+
+      let acao;
+      if (total && feitas >= total) {
+        acao = el("span", { className: "feito", textContent: "✓ Tudo analisado" });
+      } else {
+        const faltam = total ? total - feitas : LOTE;
+        acao = el("button", { textContent: `Analisar ${Math.min(LOTE, faltam)} imagens` });
+        acao.onclick = () => analisarPasta(pasta, acao);
+      }
+
+      return el("div", { className: "pasta" },
+        capa,
+        el("div", {},
+          el("strong", { textContent: pasta.name }),
+          el("small", { textContent: `${feitas} de ${total} analisadas` }),
+          barra,
+          acao
+        )
+      );
+    }
+
+    async function analisarPasta(pasta, botao) {
+      botao.disabled = true;
+      botao.textContent = "Analisando... (~1 min)";
+      const limite = (analisadas.por_pasta[pasta.id] || 0) + LOTE;
+      try {
+        const r = await api(`/boards/${encodeURIComponent(pasta.id)}/indexar?limite=${limite}`, { method: "POST" });
+        analisadas = await api("/referencias/total");
+        atualizarStatus();
+        await carregarPastas();
+        if (r.erros.length) {
+          adicionarIa(`Analisei ${r.indexados} imagens de "${pasta.name}", mas ${r.erros.length} falharam. `
+            + mensagemAmigavel(r.erros[0].erro), [], true);
+        }
+      } catch (erro) {
+        botao.disabled = false;
+        botao.textContent = "Tentar de novo";
+        adicionarIa(erro.message, [], true);
+      }
+    }
+
+    // ---------- conversa ----------
+    function esconderVazio() { $("vazio")?.remove(); }
+
+    function rolar() { $("mensagens").scrollTop = $("mensagens").scrollHeight; }
+
+    function adicionarEu(texto) {
+      esconderVazio();
+      $("mensagens").append(el("div", { className: "msg eu", textContent: texto }));
+      rolar();
+    }
+
+    function adicionarIa(texto, referencias = [], erro = false) {
+      esconderVazio();
+      const msg = el("div", { className: "msg ia" + (erro ? " erro" : "") },
+        el("div", { className: "texto", textContent: texto }));
+      if (referencias.length) msg.append(el("div", { className: "grade" }, ...referencias.map(cartaoImagem)));
+      $("mensagens").append(msg);
+      rolar();
+      return msg;
+    }
+
+    function bolinhas(cores) {
+      return el("div", { className: "paleta" }, ...cores.map((cor) => {
+        const s = el("span", { title: cor });
+        if (/^#[0-9a-f]{3,8}$/i.test(cor)) s.style.background = cor;
+        return s;
+      }));
+    }
+
+    function cartaoImagem(ref) {
+      const a = ref.analise;
+      const card = el("button", { className: "card", type: "button", title: "Ver detalhes" },
+        el("img", { src: ref.imagem_url, alt: a.descricao, loading: "lazy" }),
+        el("div", { className: "info" }, bolinhas(a.paleta), (a.estilo || []).slice(0, 2).join(" · "))
+      );
+      card.onclick = () => abrirDetalhe(ref);
+      return card;
+    }
+
+    function abrirDetalhe(ref) {
+      const a = ref.analise;
+      const campo = (titulo, valor) => [el("dt", { textContent: titulo }), el("dd", { textContent: valor })];
+      const link = el("a", {
+        href: `https://www.pinterest.com/pin/${encodeURIComponent(ref.pin_id)}/`,
+        target: "_blank", rel: "noopener", textContent: "Abrir no Pinterest ↗"
+      });
+      const fechar = el("button", { className: "leve", textContent: "Fechar" });
+      fechar.onclick = () => $("detalhe").close();
+
+      $("detalhe").replaceChildren(el("div", { className: "detalhe" },
+        el("img", { src: ref.imagem_url, alt: a.descricao }),
+        el("div", { className: "corpo" },
+          el("p", { textContent: a.descricao }),
+          bolinhas(a.paleta),
+          el("dl", {},
+            ...campo("Estilo", a.estilo.join(", ")),
+            ...campo("Iluminação", a.iluminacao),
+            ...campo("Composição", a.composicao),
+            ...campo("Clima", a.clima),
+            ...campo("Tags", a.tags.join(", "))
+          ),
+          link, " ", fechar
+        )
+      ));
+      $("detalhe").showModal();
+    }
+    $("detalhe").onclick = (e) => { if (e.target === $("detalhe")) $("detalhe").close(); };
+
+    async function enviar(texto) {
+      texto = texto.trim();
+      if (!texto) return;
+      $("entrada").value = "";
+      adicionarEu(texto);
+      $("botao-enviar").disabled = true;
+      const pensando = adicionarIa("Procurando nas suas referências...");
+      pensando.classList.add("digitando");
+      try {
+        const r = await api("/chat", { method: "POST", body: JSON.stringify({ mensagem: texto, conversa_id: conversaId }) });
+        conversaId = r.conversa_id;
+        pensando.remove();
+        adicionarIa(r.resposta || "Não encontrei nada para isso.", r.referencias);
+      } catch (erro) {
+        pensando.remove();
+        if (erro.auth) return mostrarConectar(erro.message);
+        adicionarIa(erro.message, [], true);
+      }
+      $("botao-enviar").disabled = false;
+      $("entrada").focus();
+    }
+
+    $("form-chat").onsubmit = (e) => { e.preventDefault(); enviar($("entrada").value); };
+    $("sugestoes").append(...SUGESTOES.map((s) => {
+      const b = el("button", { type: "button", textContent: s });
+      b.onclick = () => enviar(s);
+      return b;
+    }));
+
+    // ---------- início ----------
+    (async () => {
+      let salva = "";
+      try { salva = localStorage.getItem("vra-chave") || ""; } catch (e) {}
+      if (!salva) return mostrarConectar();
+      try { await conectar(salva); }
+      catch (erro) { mostrarConectar(erro.auth ? "A chave salva não vale mais. Cole a atual." : erro.message); }
+    })();
+  </script>
+</body>
+</html>
